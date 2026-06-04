@@ -2,7 +2,7 @@ import subprocess
 import shutil
 import redis
 import requests
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from app.config import settings
 from app.database.neo4j import neo4j_client
 from app.security import verify_employee
@@ -131,3 +131,52 @@ def get_system_telemetry(current_user = Depends(verify_employee)):
             "vram_usage": gpu_vram
         }
     }
+
+@router.websocket("/ws")
+async def websocket_monitoring(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        import json
+        import asyncio
+        from app.database.postgres import SessionLocal
+        from app.database.models import ProcessingJob, User, Document
+        from sqlalchemy import func
+        
+        while True:
+            db = SessionLocal()
+            try:
+                # Active processing jobs
+                active_jobs = db.query(ProcessingJob).filter(ProcessingJob.status.in_(["pending", "processing"])).count()
+                total_documents = db.query(Document).count()
+                
+                # Active users (simulate using total users or count)
+                total_users = db.query(User).count()
+                
+                # Total tokens consumed today
+                total_tokens_today = db.query(func.sum(User.tokens_used_today)).scalar() or 0
+            except Exception:
+                active_jobs = 0
+                total_documents = 0
+                total_users = 0
+                total_tokens_today = 0
+            finally:
+                db.close()
+                
+            # Get telemetry info
+            telemetry = get_system_telemetry(None)
+            
+            # Send monitoring data packet
+            data = {
+                "active_jobs": active_jobs,
+                "total_documents": total_documents,
+                "total_users": total_users,
+                "total_tokens_today": int(total_tokens_today),
+                "telemetry": telemetry
+            }
+            await websocket.send_text(json.dumps(data))
+            await asyncio.sleep(2) # Broadcast every 2 seconds
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+

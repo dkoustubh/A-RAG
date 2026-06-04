@@ -8,7 +8,7 @@ export default function Documents() {
   const [loading, setLoading] = useState(false)
 
   const host = `http://${window.location.hostname}:8082`
-  const headers = { Authorization: "Bearer dummy-token" }
+  const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
 
   const fetchDocs = async () => {
     try {

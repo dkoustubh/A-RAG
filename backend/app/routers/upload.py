@@ -2,18 +2,19 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from app.services.ingestion import IngestionPipeline
 from app.workers.tasks import deep_extraction_task
 from app.security import verify_employee
+from app.database.models import User
 import asyncio
 
 router = APIRouter(prefix="/upload", tags=["upload"])
 
 @router.post("/")
-async def upload_document(file: UploadFile = File(...), current_user = Depends(verify_employee)):
+async def upload_document(file: UploadFile = File(...), current_user: User = Depends(verify_employee)):
     """
     Ingests files immediately (< 5s target) and schedules deep extraction background tasks.
+    Attaches owner_id and team_id for RBAC workspace isolation.
     """
     file_bytes = await file.read()
     
-    # 1. Immediate search ready ingestion (runs synchronously to return fast)
     try:
         # Run on asyncio thread pool to keep fastapi responsive
         loop = asyncio.get_event_loop()
@@ -21,10 +22,12 @@ async def upload_document(file: UploadFile = File(...), current_user = Depends(v
             None,
             IngestionPipeline.ingest_immediate,
             file.filename,
-            file_bytes
+            file_bytes,
+            current_user.id,
+            current_user.team_id
         )
         
-        # 2. Schedule Deep parsing & extraction asynchronously via Celery
+        # Schedule Deep parsing & extraction asynchronously via Celery
         deep_extraction_task.delay(
             result["document_id"],
             file_bytes,

@@ -30,7 +30,7 @@ export default function Upload() {
       const res = await axios.post(`${host}/upload/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          "Authorization": "Bearer dummy-token"
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
         }
       })
       setDocId(res.data.document_id)
@@ -43,7 +43,7 @@ export default function Upload() {
   }
 
   const pollStatus = (id) => {
-    const headers = { Authorization: "Bearer dummy-token" }
+    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
     const check = async () => {
       try {
         const res = await axios.get(`${host}/pipeline/status/${id}`, { headers })

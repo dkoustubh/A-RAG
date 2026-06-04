@@ -12,7 +12,7 @@ export default function Dashboard() {
     try {
       // Connect to local ports exposed on Mac (redirected from remote) or direct
       const host = `http://${window.location.hostname}:8082`
-      const headers = { Authorization: "Bearer dummy-token" } // If JWT is set, else handle credentials
+      const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
       
       const [telRes, healthRes] = await Promise.all([
         axios.get(`${host}/monitoring/telemetry`, { headers }),

@@ -1,6 +1,6 @@
 import os
 import uuid
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pypdf import PdfReader
 from docx import Document as DocxDocument
@@ -81,7 +81,7 @@ class IngestionPipeline:
         return chunks
 
     @classmethod
-    def ingest_immediate(cls, filename: str, file_bytes: bytes) -> Dict[str, Any]:
+    def ingest_immediate(cls, filename: str, file_bytes: bytes, owner_id: Optional[int] = None, team_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Immediate ingestion path (< 5s target).
         """
@@ -107,7 +107,9 @@ class IngestionPipeline:
                 location=object_name,
                 file_type=strategy["format"],
                 industry=strategy["class"],
-                search_ready=False
+                search_ready=False,
+                owner_id=owner_id,
+                team_id=team_id
             )
             db.add(document)
             db.commit()

@@ -35,7 +35,7 @@ export default function KnowledgeGraph() {
   const [draggedNode, setDraggedNode] = useState(null)
 
   const host = `http://${window.location.hostname}:8082`
-  const headers = { Authorization: 'Bearer dummy-token' }
+  const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
   const svgRef = useRef(null)
 
   const fetchGraph = async (queryToRun) => {

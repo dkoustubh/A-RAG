@@ -3,13 +3,25 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database.postgres import Base
 
+class Team(Base):
+    __tablename__ = "teams"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
+    username = Column(String, unique=True, index=True, nullable=True)
+    email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     role = Column(String, default="employee", nullable=False) # admin, manager, employee
+    is_temp_password = Column(Boolean, default=True, nullable=False)
+    team_id = Column(Integer, ForeignKey("teams.id", ondelete="SET NULL"), nullable=True)
+    daily_token_quota = Column(Integer, default=242000, nullable=False)
+    tokens_used_today = Column(Integer, default=0, nullable=False)
+    quota_reset_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
 
 class Document(Base):
     __tablename__ = "documents"
@@ -22,6 +34,9 @@ class Document(Base):
     file_type = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     search_ready = Column(Boolean, default=False)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    team_id = Column(Integer, ForeignKey("teams.id", ondelete="SET NULL"), nullable=True)
+
 
     tables = relationship("ExtractedTable", back_populates="document", cascade="all, delete-orphan")
     metadata_entries = relationship("DocumentMetadata", back_populates="document", cascade="all, delete-orphan")
@@ -196,3 +211,15 @@ class Summary(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     document = relationship("Document", back_populates="summaries")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    sender = Column(String, nullable=False) # 'user' or 'bot'
+    text = Column(Text, nullable=False)
+    meta = Column(JSON, nullable=True) # stores confidence, sources, graph nodes, etc.
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+

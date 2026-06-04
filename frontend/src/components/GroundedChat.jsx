@@ -20,18 +20,34 @@ import {
   X,
   Globe,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Trash2
 } from 'lucide-react'
 
 export default function GroundedChat() {
-  const [sessions, setSessions] = useState([
-    {
-      id: 'session-default',
-      name: 'New Grounded Chat',
-      messages: []
+  const [sessions, setSessions] = useState(() => {
+    const saved = localStorage.getItem('grounded_sessions')
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (e) {
+        console.error(e)
+      }
     }
-  ])
-  const [activeSessionId, setActiveSessionId] = useState('session-default')
+    return [
+      {
+        id: 'session-default',
+        name: 'New Grounded Chat',
+        messages: []
+      }
+    ]
+  })
+
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    const saved = localStorage.getItem('grounded_active_session_id')
+    return saved || 'session-default'
+  })
+
   const [inputValue, setInputValue] = useState('')
   const [loading, setLoading] = useState(false)
   const [copiedIndex, setCopiedIndex] = useState(null)
@@ -46,13 +62,22 @@ export default function GroundedChat() {
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
   const host = `http://${window.location.hostname}:8082`
-  const headers = { Authorization: "Bearer dummy-token" }
 
   const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0]
 
+  // Persist sessions to localStorage
+  useEffect(() => {
+    localStorage.setItem('grounded_sessions', JSON.stringify(sessions))
+  }, [sessions])
+
+  // Persist activeSessionId to localStorage
+  useEffect(() => {
+    localStorage.setItem('grounded_active_session_id', activeSessionId)
+  }, [activeSessionId])
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [activeSession.messages, loading])
+  }, [activeSession?.messages, loading])
 
   const createNewSession = () => {
     const newId = `session-${Date.now()}`
@@ -67,6 +92,27 @@ export default function GroundedChat() {
     setActiveSessionId(newId)
     setExpandedIndex(null)
     detachFile()
+  }
+
+  const deleteSession = (sessionId) => {
+    if (sessions.length <= 1) {
+      setSessions([
+        {
+          id: 'session-default',
+          name: 'New Grounded Chat',
+          messages: []
+        }
+      ])
+      setActiveSessionId('session-default')
+      return
+    }
+
+    const filtered = sessions.filter(s => s.id !== sessionId)
+    setSessions(filtered)
+
+    if (activeSessionId === sessionId) {
+      setActiveSessionId(filtered[0].id)
+    }
   }
 
   const handleSuggestionClick = (queryText) => {
@@ -100,7 +146,7 @@ export default function GroundedChat() {
       const res = await axios.post(`${host}/upload/`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          "Authorization": "Bearer dummy-token"
+          "Authorization": `Bearer ${localStorage.getItem('token')}`
         }
       })
       setAttachedDocId(res.data.document_id)
@@ -136,7 +182,7 @@ export default function GroundedChat() {
     // Update current session's messages
     setSessions(prev => prev.map(s => {
       if (s.id === activeSessionId) {
-        const updatedMsgs = [...s.messages, userMessage]
+        const updatedMsgs = [...(s.messages || []), userMessage]
         // Rename session if it's the first message
         const updatedName = s.name === 'New Grounded Chat' 
           ? (queryText.length > 25 ? queryText.substring(0, 25) + '...' : queryText)
@@ -149,8 +195,10 @@ export default function GroundedChat() {
     try {
       const payload = {
         query: queryText,
-        document_id: (attachedFile && queryScope === 'document') ? attachedDocId : null
+        document_id: (attachedFile && queryScope === 'document') ? attachedDocId : null,
+        session_id: activeSessionId
       }
+      const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
 
       const res = await axios.post(`${host}/search/query`, payload, { headers })
       
@@ -169,7 +217,7 @@ export default function GroundedChat() {
 
       setSessions(prev => prev.map(s => {
         if (s.id === activeSessionId) {
-          return { ...s, messages: [...s.messages, botMessage] }
+          return { ...s, messages: [...(s.messages || []), botMessage] }
         }
         return s
       }))
@@ -182,7 +230,7 @@ export default function GroundedChat() {
       }
       setSessions(prev => prev.map(s => {
         if (s.id === activeSessionId) {
-          return { ...s, messages: [...s.messages, errorMessage] }
+          return { ...s, messages: [...(s.messages || []), errorMessage] }
         }
         return s
       }))
@@ -208,7 +256,6 @@ export default function GroundedChat() {
     { text: "Are there any BOM items?", desc: "Check part list evidence" }
   ]
 
-  // Detect routing engines utilized based on backend response contents
   const getEnginesUsed = (meta) => {
     const engines = []
     if (!meta) return engines
@@ -227,8 +274,10 @@ export default function GroundedChat() {
     if (sourcesStr.includes('query') && engines.length === 0) {
       engines.push({ name: 'SQL Query Engine', color: 'text-orange-400 bg-orange-500/10 border border-orange-500/20' })
     }
+    if (sourcesStr.includes('past chat')) {
+      engines.push({ name: 'Past Chats Memory', color: 'text-pink-400 bg-pink-500/10 border border-pink-500/20' })
+    }
     
-    // Fallback if empty but has sources
     if (engines.length === 0 && meta.sources.length > 0) {
       engines.push({ name: 'RAG Retriever', color: 'text-gray-400 bg-gray-500/10 border border-gray-500/20' })
     }
@@ -255,26 +304,40 @@ export default function GroundedChat() {
         
         <div className="flex-1 overflow-y-auto p-3 space-y-1.5 custom-scrollbar">
           {sessions.map(session => (
-            <button
+            <div
               key={session.id}
               onClick={() => {
                 setActiveSessionId(session.id)
                 setExpandedIndex(null)
               }}
-              className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 border text-sm flex items-center gap-3 ${
+              className={`w-full group text-left px-4 py-3 rounded-xl transition-all duration-200 border text-sm flex items-center justify-between gap-3 cursor-pointer ${
                 session.id === activeSessionId
                   ? 'bg-[#7289da]/10 border-[#7289da]/30 text-white font-medium'
                   : 'bg-transparent border-transparent text-gray-400 hover:text-gray-200 hover:bg-white/5'
               }`}
             >
-              <MessageSquare className={`w-4 h-4 shrink-0 ${session.id === activeSessionId ? 'text-[#7289da]' : 'text-gray-500'}`} />
-              <span className="truncate flex-1">{session.name}</span>
-              {session.messages.length > 0 && (
-                <span className="text-[10px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-gray-500 font-mono">
-                  {session.messages.length}
-                </span>
-              )}
-            </button>
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <MessageSquare className={`w-4 h-4 shrink-0 ${session.id === activeSessionId ? 'text-[#7289da]' : 'text-gray-500'}`} />
+                <span className="truncate flex-1">{session.name}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {(session.messages || []).length > 0 && (
+                  <span className="text-[10px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded text-gray-500 font-mono group-hover:hidden">
+                    {session.messages.length}
+                  </span>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteSession(session.id)
+                  }}
+                  className="p-1 hover:bg-white/10 text-gray-500 hover:text-red-400 rounded-md transition-all hidden group-hover:block"
+                  title="Delete Chat"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -300,7 +363,7 @@ export default function GroundedChat() {
 
         {/* Chat Messages */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-          {activeSession.messages.length === 0 ? (
+          {!activeSession || !activeSession.messages || activeSession.messages.length === 0 ? (
             <div className="h-full flex flex-col justify-center items-center max-w-xl mx-auto text-center space-y-8">
               <div className="space-y-3">
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#7289da] to-[#8a9dec] flex items-center justify-center mx-auto shadow-lg shadow-[#7289da]/25">
