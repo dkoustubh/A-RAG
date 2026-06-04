@@ -8,10 +8,11 @@ export default function Documents() {
   const [loading, setLoading] = useState(false)
 
   const host = `http://${window.location.hostname}:8082`
+  const headers = { Authorization: "Bearer dummy-token" }
 
   const fetchDocs = async () => {
     try {
-      const res = await axios.get(`${host}/documents/`)
+      const res = await axios.get(`${host}/documents/`, { headers })
       setDocs(res.data)
     } catch (e) {
       console.error(e)
@@ -21,7 +22,7 @@ export default function Documents() {
   const fetchDetails = async (id) => {
     setLoading(true)
     try {
-      const res = await axios.get(`${host}/documents/${id}`)
+      const res = await axios.get(`${host}/documents/${id}`, { headers })
       setSelectedDoc(res.data)
     } catch (e) {
       console.error(e)
@@ -33,7 +34,7 @@ export default function Documents() {
   const deleteDoc = async (id) => {
     if (!window.confirm("Are you sure you want to delete this document?")) return
     try {
-      await axios.delete(`${host}/documents/${id}`)
+      await axios.delete(`${host}/documents/${id}`, { headers })
       setSelectedDoc(null)
       fetchDocs()
     } catch (e) {

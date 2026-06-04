@@ -8,6 +8,7 @@ router = APIRouter(prefix="/search", tags=["search"])
 
 class QueryRequest(BaseModel):
     query: str
+    document_id: Optional[int] = None
 
 class QueryResponse(BaseModel):
     answer: str
@@ -22,5 +23,5 @@ def search_query(req: QueryRequest, current_user = Depends(verify_employee)):
     """
     Executes reasoning search using Query Routing rules.
     """
-    result = ChatService.execute_chat_query(req.query)
+    result = ChatService.execute_chat_query(req.query, req.document_id)
     return result

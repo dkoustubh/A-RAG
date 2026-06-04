@@ -15,8 +15,8 @@ export default function Dashboard() {
       const headers = { Authorization: "Bearer dummy-token" } // If JWT is set, else handle credentials
       
       const [telRes, healthRes] = await Promise.all([
-        axios.get(`${host}/monitoring/telemetry`),
-        axios.get(`${host}/monitoring/health`)
+        axios.get(`${host}/monitoring/telemetry`, { headers }),
+        axios.get(`${host}/monitoring/health`, { headers })
       ])
       setTelemetry(telRes.data)
       setHealth(healthRes.data)
@@ -102,19 +102,40 @@ export default function Dashboard() {
         <div className="glass-card rounded-2xl p-8">
           <h2 className="text-xl font-bold text-white mb-6">Database Connectivity Handshakes</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Object.entries(health.services).map(([key, val]) => (
-              <div key={key} className="flex justify-between items-center p-4 bg-white/5 rounded-xl border border-white/5">
-                <span className="capitalize text-sm text-gray-400 font-medium">{key}</span>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${
-                  val === 'connected' ? 'bg-[#43b581]/15 text-[#43b581]' : 'bg-red-500/15 text-red-400'
-                }`}>
-                  {val}
-                </span>
-              </div>
-            ))}
+            {Object.entries(health.services).map(([key, val]) => {
+              const sizeInBytes = health.sizes ? health.sizes[key] : null
+              return (
+                <div key={key} className="p-4 bg-white/5 rounded-xl border border-white/5 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="capitalize text-sm text-gray-400 font-medium">{key}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                      val === 'connected' ? 'bg-[#43b581]/15 text-[#43b581]' : 'bg-red-500/15 text-red-400'
+                    }`}>
+                      {val}
+                    </span>
+                  </div>
+                  {sizeInBytes !== null && (
+                    <div className="flex justify-between items-center pt-2 border-t border-white/5 text-[11px] text-gray-500">
+                      <span>Workstation storage</span>
+                      <span className="text-white font-mono font-semibold">{formatBytesToGB(sizeInBytes)}</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
     </div>
   )
+}
+
+function formatBytesToGB(bytes) {
+  if (!bytes) return "0.00 GB";
+  const gb = bytes / (1024 * 1024 * 1024);
+  if (gb < 0.01) {
+    const mb = bytes / (1024 * 1024);
+    return `${mb.toFixed(2)} MB`;
+  }
+  return `${gb.toFixed(3)} GB`;
 }

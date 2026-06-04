@@ -1,7 +1,10 @@
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, TabbedContent, TabPane, Static, Input, Button, Label, RichLog
 from textual.containers import Container, Horizontal, Vertical
-from tui.client import ARAGClient
+try:
+    from tui.client import ARAGClient
+except ModuleNotFoundError:
+    from client import ARAGClient
 import time
 import os
 
@@ -42,9 +45,20 @@ class ARAGTuiApp(App):
     }
     .chat-box {
         border: solid #cba6f7;
-        margin: 1;
-        height: 60%;
+        margin: 1 1 0 1;
+        height: 1fr;
+        min-height: 10;
         background: #181825;
+    }
+    .chat-input-row {
+        height: 3;
+        margin: 1;
+    }
+    .chat-input-row Input {
+        width: 1fr;
+    }
+    .chat-input-row Button {
+        width: 14;
     }
     """
 
@@ -93,7 +107,7 @@ class ARAGTuiApp(App):
                 with Vertical():
                     self.chat_log = RichLog(classes="chat-box", wrap=True, highlight=True)
                     yield self.chat_log
-                    with Horizontal():
+                    with Horizontal(classes="chat-input-row"):
                         yield Input(placeholder="Submit question to A-RAG reasoning cluster...", id="txt_query")
                         yield Button("Submit", id="btn_query", variant="primary")
                         
@@ -192,6 +206,10 @@ class ARAGTuiApp(App):
                 self.chat_log.write(f"[dim]Referenced Graph Nodes: {', '.join(res['graph_nodes_used'])}[/]")
         else:
             self.chat_log.write(f"[bold red]System Error: {res['error']}[/]")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "txt_query":
+            self.submit_chat_query()
 
     def action_perform_login(self) -> None:
         self.login_and_sync()

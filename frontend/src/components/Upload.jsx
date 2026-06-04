@@ -43,9 +43,10 @@ export default function Upload() {
   }
 
   const pollStatus = (id) => {
+    const headers = { Authorization: "Bearer dummy-token" }
     const check = async () => {
       try {
-        const res = await axios.get(`${host}/pipeline/status/${id}`)
+        const res = await axios.get(`${host}/pipeline/status/${id}`, { headers })
         setStages(res.data.stages)
         if (res.data.stages.intelligence === 'completed' || res.data.stages.intelligence === 'failed') {
           clearInterval(interval)

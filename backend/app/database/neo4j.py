@@ -1,11 +1,11 @@
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, basic_auth
 from app.config import settings
 
 class Neo4jConnector:
     def __init__(self):
         self.driver = GraphDatabase.driver(
             settings.NEO4J_URI,
-            auth=(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
+            auth=basic_auth(settings.NEO4J_USER, settings.NEO4J_PASSWORD)
         )
 
     def close(self):

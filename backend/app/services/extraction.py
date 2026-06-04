@@ -13,10 +13,36 @@ gliner_model = None
 def get_gliner_model():
     global gliner_model
     if gliner_model is None:
+        import os
+        cache_dir = os.environ.get("HF_HOME", os.path.expanduser("~/.cache/huggingface"))
+        hub_cache = os.path.join(cache_dir, "hub")
+        model_slug = settings.GLINER_MODEL.replace("/", "--")
+        model_dir = os.path.join(hub_cache, f"models--{model_slug}")
+        
+        # Attempt 1: load from direct snapshot path (works offline)
+        try:
+            snapshots_dir = os.path.join(model_dir, "snapshots")
+            if os.path.isdir(snapshots_dir):
+                snapshot_dirs = [d for d in os.listdir(snapshots_dir) if not d.startswith('.')]
+                if snapshot_dirs:
+                    snapshot_path = os.path.join(snapshots_dir, snapshot_dirs[0])
+                    # Verify weights exist
+                    files = os.listdir(snapshot_path)
+                    if any(f.endswith(('.bin', '.safetensors')) for f in files):
+                        gliner_model = GLiNER.from_pretrained(snapshot_path, local_files_only=True)
+                        print(f"GLiNER model loaded from snapshot: {snapshot_path}")
+                        return gliner_model
+                    else:
+                        print(f"GLiNER snapshot exists but no weights found: {files}")
+        except Exception as e1:
+            print(f"GLiNER snapshot load failed: {e1}")
+        
+        # Attempt 2: standard from_pretrained (may download)
         try:
             gliner_model = GLiNER.from_pretrained(settings.GLINER_MODEL)
-        except Exception as e:
-            print(f"Error loading GLiNER model: {e}. Falling back to mock/regex model.")
+            print("GLiNER model loaded via from_pretrained.")
+        except Exception as e2:
+            print(f"GLiNER all load attempts failed: {e2}. Entity extraction disabled.")
             gliner_model = None
     return gliner_model
 
@@ -29,29 +55,46 @@ class DeepExtractor:
         tables = []
         try:
             from docling.document_converter import DocumentConverter
+            import tempfile, os as _os
             converter = DocumentConverter()
-            import tempfile
-            with tempfile.NamedTemporaryFile(suffix=os.path.splitext(filename)[1], delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(suffix=_os.path.splitext(filename)[1], delete=False) as tmp:
                 tmp.write(file_bytes)
                 tmp_path = tmp.name
             
-            result = converter.convert_single(tmp_path)
-            # Extract tables
-            for i, tbl in enumerate(result.tables):
-                headers = [col.text for col in tbl.header.cells] if tbl.header else []
+            result = converter.convert(tmp_path)
+            doc = result.document if hasattr(result, 'document') else result
+            
+            # Try to extract tables from the document
+            doc_tables = []
+            if hasattr(doc, 'tables'):
+                doc_tables = doc.tables
+            elif hasattr(doc, 'content') and hasattr(doc.content, 'tables'):
+                doc_tables = doc.content.tables
+            
+            for i, tbl in enumerate(doc_tables):
+                headers = []
+                if hasattr(tbl, 'header') and tbl.header:
+                    headers = [col.text for col in tbl.header.cells] if hasattr(tbl.header, 'cells') else []
+                
                 rows = []
-                for r in tbl.rows:
-                    rows.append([cell.text for cell in r.cells])
+                tbl_rows = tbl.rows if hasattr(tbl, 'rows') else []
+                for r in tbl_rows:
+                    cells = r.cells if hasattr(r, 'cells') else []
+                    rows.append([cell.text for cell in cells])
+                
+                title = getattr(tbl, 'title', None) or f"Table {i+1}"
+                caption = getattr(tbl, 'caption', None) or ""
+                raw_text = tbl.to_markdown() if hasattr(tbl, 'to_markdown') else ""
                 
                 tables.append({
                     "table_identifier": f"table_{i+1}",
-                    "title": tbl.title or f"Table {i+1}",
-                    "caption": tbl.caption or "",
-                    "raw_text": tbl.to_markdown() or "",
+                    "title": title,
+                    "caption": caption,
+                    "raw_text": raw_text,
                     "headers": headers,
                     "rows": rows
                 })
-            os.unlink(tmp_path)
+            _os.unlink(tmp_path)
         except Exception as e:
             print(f"Docling parsing error: {e}. Running regex-based simple table parsing.")
             # Simple fallback parser for CSV/XLSX
@@ -139,39 +182,67 @@ class DeepExtractor:
     @staticmethod
     def extract_facts(text: str, entities: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Generates S-P-O facts using extracted entities and verb relationships.
+        Generates S-P-O facts using extracted entities and co-occurrence relationships.
         """
         facts = []
-        # Find entities labeled Customer, Vendor, Project, Part Number
-        subjects = [e for e in entities if e["label"] in ["Customer", "Vendor", "Employee"]]
-        objects = [e for e in entities if e["label"] in ["Project", "Part Number", "Technology"]]
+        seen_pairs = set()
         
-        for sub in subjects[:10]:
-            for obj in objects[:10]:
-                sub_text = sub["text"]
-                obj_text = obj["text"]
-                # Look for sentence containing both
-                for sentence in text.split("."):
-                    if sub_text in sentence and obj_text in sentence:
-                        pred = "RELATED_TO"
-                        if "request" in sentence.lower() or "need" in sentence.lower():
-                            pred = "REQUESTED"
-                        elif "quote" in sentence.lower() or "price" in sentence.lower():
-                            pred = "QUOTED"
-                        elif "buy" in sentence.lower() or "purchase" in sentence.lower() or "order" in sentence.lower():
-                            pred = "PURCHASED"
-                        elif "work" in sentence.lower() or "assign" in sentence.lower():
-                            pred = "WORKS_ON"
-                        elif "use" in sentence.lower():
-                            pred = "USES"
-                            
+        # Deduplicate entities by text
+        unique_entities = {}
+        for e in entities:
+            key = e["text"].strip().lower()
+            if key and len(key) > 1 and key not in unique_entities:
+                unique_entities[key] = e
+        deduped = list(unique_entities.values())
+        
+        # Strategy 1: Pair entities that co-occur in the same sentence/line
+        lines = [s.strip() for s in re.split(r'[.\n]', text) if s.strip()]
+        for line in lines:
+            line_entities = [e for e in deduped if e["text"] in line]
+            for i, e1 in enumerate(line_entities):
+                for e2 in line_entities[i+1:]:
+                    pair_key = (e1["text"], e2["text"])
+                    reverse_key = (e2["text"], e1["text"])
+                    if pair_key in seen_pairs or reverse_key in seen_pairs:
+                        continue
+                    seen_pairs.add(pair_key)
+                    
+                    # Determine predicate from context
+                    pred = "RELATED_TO"
+                    ll = line.lower()
+                    if "request" in ll or "need" in ll or "rfq" in ll:
+                        pred = "REQUESTED"
+                    elif "quote" in ll or "price" in ll or "amount" in ll:
+                        pred = "QUOTED"
+                    elif "buy" in ll or "purchase" in ll or "order" in ll:
+                        pred = "PURCHASED"
+                    elif "supply" in ll or "deliver" in ll:
+                        pred = "SUPPLIED"
+                    elif "work" in ll or "assign" in ll:
+                        pred = "WORKS_ON"
+                    
+                    facts.append({
+                        "subject": e1["text"],
+                        "predicate": pred,
+                        "object": e2["text"],
+                        "confidence": min(e1.get("score", 0.85), e2.get("score", 0.85))
+                    })
+        
+        # Strategy 2: If no co-occurrence facts, create at least pairwise relationships
+        # between all unique entities found in the same document
+        if not facts and len(deduped) >= 2:
+            for i, e1 in enumerate(deduped[:15]):
+                for e2 in deduped[i+1:15]:
+                    pair_key = (e1["text"], e2["text"])
+                    if pair_key not in seen_pairs:
+                        seen_pairs.add(pair_key)
                         facts.append({
-                            "subject": sub_text,
-                            "predicate": pred,
-                            "object": obj_text,
-                            "confidence": 0.85
+                            "subject": e1["text"],
+                            "predicate": "CO_MENTIONED",
+                            "object": e2["text"],
+                            "confidence": 0.6
                         })
-                        break
+        
         return facts
 
     @classmethod

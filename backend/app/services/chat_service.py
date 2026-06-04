@@ -1,5 +1,5 @@
 import requests
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from app.config import settings
 from app.database.postgres import SessionLocal
 from app.database.models import Document, Fact, RFQ, Customer, Vendor, Project
@@ -35,7 +35,7 @@ class ChatService:
             return f"Error contacting AI service: {str(e)}"
 
     @classmethod
-    def execute_chat_query(cls, query: str) -> Dict[str, Any]:
+    def execute_chat_query(cls, query: str, document_id: Optional[int] = None) -> Dict[str, Any]:
         """
         Main query execution engine. Uses deterministic databases before LLM generation.
         """
@@ -55,8 +55,12 @@ class ChatService:
                 # Execute simple SQL query or map rules
                 q_lower = query.lower()
                 if "how many rfq" in q_lower or "count rfq" in q_lower:
-                    count = db.query(RFQ).count()
-                    answer = f"Total number of RFQs is {count}."
+                    if document_id:
+                        count = db.query(RFQ).filter(RFQ.document_id == document_id).count()
+                        answer = f"Total number of RFQs in this document is {count}."
+                    else:
+                        count = db.query(RFQ).count()
+                        answer = f"Total number of RFQs is {count}."
                     sources.append("PostgreSQL: rfqs table")
                 elif "how many document" in q_lower or "count document" in q_lower:
                     count = db.query(Document).count()
@@ -78,7 +82,10 @@ class ChatService:
                     - vendors (id, name, code)
                     - projects (id, name, status, budget)
                     """
-                    prompt = f"Given this PostgreSQL schema:\n{schema}\nWrite a read-only SELECT SQL query for: '{query}'. Return ONLY the SQL query code block and nothing else."
+                    prompt = f"Given this PostgreSQL schema:\n{schema}\nWrite a read-only SELECT SQL query for: '{query}'. "
+                    if document_id:
+                        prompt += f"IMPORTANT: You MUST filter the query using 'WHERE document_id = {document_id}' to only search inside this document. "
+                    prompt += "Return ONLY the SQL query code block and nothing else."
                     sql_query = cls.query_vllm(prompt)
                     # Clean markdown blocks
                     sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
@@ -98,10 +105,16 @@ class ChatService:
                 matched_nodes = []
                 for w in words:
                     if len(w) > 3 and w.lower() not in ["what", "when", "where", "which", "show", "list", "with"]:
-                        res = neo4j_client.execute_read(
-                            "MATCH (n {name: $name})-[r]->(m) RETURN n.name AS source, type(r) AS rel, m.name AS target",
-                            {"name": w}
-                        )
+                        if document_id:
+                            res = neo4j_client.execute_read(
+                                "MATCH (n {name: $name})-[r]->(m) WHERE r.doc_id = $doc_id RETURN n.name AS source, type(r) AS rel, m.name AS target",
+                                {"name": w, "doc_id": document_id}
+                            )
+                        else:
+                            res = neo4j_client.execute_read(
+                                "MATCH (n {name: $name})-[r]->(m) RETURN n.name AS source, type(r) AS rel, m.name AS target",
+                                {"name": w}
+                            )
                         if res:
                             matched_nodes.extend(res)
                 
@@ -113,7 +126,13 @@ class ChatService:
                     graph_count = len(matched_nodes)
                 else:
                     # Traversal matching
-                    res = neo4j_client.execute_read("MATCH (n)-[r]->(m) RETURN n.name AS source, type(r) AS rel, m.name AS target LIMIT 10")
+                    if document_id:
+                        res = neo4j_client.execute_read(
+                            "MATCH (n)-[r]->(m) WHERE r.doc_id = $doc_id RETURN n.name AS source, type(r) AS rel, m.name AS target LIMIT 10",
+                            {"doc_id": document_id}
+                        )
+                    else:
+                        res = neo4j_client.execute_read("MATCH (n)-[r]->(m) RETURN n.name AS source, type(r) AS rel, m.name AS target LIMIT 10")
                     relations_text = "\n".join([f"- {r['source']} -[{r['rel']}]-> {r['target']}" for r in res])
                     answer = f"No direct node matched. Here is a view of the general graph relationships:\n{relations_text}"
                     sources.append("Neo4j General Schema")
@@ -124,9 +143,15 @@ class ChatService:
                 matched_facts = []
                 for w in words:
                     if len(w) > 3 and w.lower() not in ["what", "when", "where", "which", "show", "list", "with"]:
-                        facts = db.query(Fact).filter(
-                            (Fact.subject.ilike(f"%{w}%")) | (Fact.object.ilike(f"%{w}%"))
-                        ).all()
+                        if document_id:
+                            facts = db.query(Fact).filter(
+                                Fact.document_id == document_id,
+                                ((Fact.subject.ilike(f"%{w}%")) | (Fact.object.ilike(f"%{w}%")))
+                            ).all()
+                        else:
+                            facts = db.query(Fact).filter(
+                                (Fact.subject.ilike(f"%{w}%")) | (Fact.object.ilike(f"%{w}%"))
+                            ).all()
                         matched_facts.extend(facts)
                 
                 if matched_facts:
@@ -141,8 +166,20 @@ class ChatService:
 
             else:
                 # Semantic / Fallback
+                from qdrant_client.http import models as qdrant_models
+                query_filter = None
+                if document_id:
+                    query_filter = qdrant_models.Filter(
+                        must=[
+                            qdrant_models.FieldCondition(
+                                key="document_id",
+                                match=qdrant_models.MatchValue(value=document_id)
+                            )
+                        ]
+                    )
+                
                 vector = embedding_model.encode(query).tolist()
-                results = qdrant_client.search_points("documents", vector, limit=3)
+                results = qdrant_client.search_points("documents", vector, limit=3, query_filter=query_filter)
                 
                 if results:
                     contexts = []
