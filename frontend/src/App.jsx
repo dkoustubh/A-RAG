@@ -24,7 +24,7 @@ import {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard')
-  const [darkMode, setDarkMode] = useState(true)
+  const [darkMode, setDarkMode] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState(null)
   const [loadingUser, setLoadingUser] = useState(true)
@@ -220,30 +220,33 @@ export default function App() {
             </div>
           )}
 
-          {/* Theme switcher & Logout row */}
-          <div className="flex items-center justify-between px-1">
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all"
-            >
-              {darkMode ? (
-                <>
-                  <Sun className="w-3.5 h-3.5 text-orange-400" />
-                  Light
-                </>
-              ) : (
-                <>
-                  <Moon className="w-3.5 h-3.5 text-[#7289da]" />
-                  Dark
-                </>
-              )}
-            </button>
+          {/* Theme switcher & Logout block */}
+          <div className="flex flex-col gap-3 px-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Theme</span>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0a0a0f] border border-white/10 rounded-lg text-xs font-bold text-gray-400 hover:text-white transition-all"
+              >
+                {darkMode ? (
+                  <>
+                    <Sun className="w-3.5 h-3.5 text-orange-400" />
+                    Light
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-3.5 h-3.5 text-[#7289da]" />
+                    Dark
+                  </>
+                )}
+              </button>
+            </div>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-bold text-red-400 hover:text-red-300 transition-all"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-bold text-red-400 hover:text-red-300 transition-all"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              Logout
+              <LogOut className="w-4 h-4" />
+              Sign Out
             </button>
           </div>
 
