@@ -1,4 +1,5 @@
 import os
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):

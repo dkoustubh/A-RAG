@@ -7,7 +7,7 @@ export default function Documents() {
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const host = "http://127.0.0.1:8082"
+  const host = `http://${window.location.hostname}:8082`
 
   const fetchDocs = async () => {
     try {

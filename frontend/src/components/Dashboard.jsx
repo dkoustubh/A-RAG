@@ -11,7 +11,7 @@ export default function Dashboard() {
     setLoading(true)
     try {
       // Connect to local ports exposed on Mac (redirected from remote) or direct
-      const host = "http://127.0.0.1:8082"
+      const host = `http://${window.location.hostname}:8082`
       const headers = { Authorization: "Bearer dummy-token" } // If JWT is set, else handle credentials
       
       const [telRes, healthRes] = await Promise.all([

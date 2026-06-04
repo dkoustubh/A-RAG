@@ -6,7 +6,7 @@ export default function KnowledgeGraph() {
   const [data, setData] = useState({ nodes: [], links: [] })
   const [loading, setLoading] = useState(true)
 
-  const host = "http://127.0.0.1:8082"
+  const host = `http://${window.location.hostname}:8082`
 
   const fetchGraph = async () => {
     try {

@@ -10,7 +10,7 @@ export default function Upload() {
   const [stages, setStages] = useState(null)
   const [errorMsg, setErrorMsg] = useState("")
 
-  const host = "http://127.0.0.1:8082"
+  const host = `http://${window.location.hostname}:8082`
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0])

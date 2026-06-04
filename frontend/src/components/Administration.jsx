@@ -6,7 +6,7 @@ export default function Administration() {
   const [runningJob, setRunningJob] = useState(false)
   const [statusMsg, setStatusMsg] = useState("")
 
-  const host = "http://127.0.0.1:8082"
+  const host = `http://${window.location.hostname}:8082`
 
   const triggerNightlyJobs = async () => {
     setRunningJob(true)

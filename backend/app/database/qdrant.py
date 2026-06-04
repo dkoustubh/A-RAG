@@ -29,12 +29,13 @@ class QdrantConnector:
         )
 
     def search_points(self, collection_name: str, query_vector: list, limit: int = 5, query_filter = None):
-        return self.client.search(
+        res = self.client.query_points(
             collection_name=collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit,
             query_filter=query_filter
         )
+        return res.points
 
     def count_points(self, collection_name: str) -> int:
         try:
