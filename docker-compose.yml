@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: arag-redis
+    restart: unless-stopped
+    ports:
+      - "6378:6379"
+    volumes:
+      - redis_data:/data
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: arag-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  neo4j:
+    image: neo4j:5.12.0
+    container_name: arag-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/Ats@123*
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - neo4j_data:/data
+      - neo4j_import:/var/lib/neo4j/import
+
+  minio:
+    image: minio/minio:latest
+    container_name: arag-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=Ats@123*
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: arag-backend
+    restart: unless-stopped
+    network_mode: "host"
+    environment:
+      - ENV=production
+    volumes:
+      - ./backend:/app
+      - /mnt/nas:/mnt/nas
+      - /home/ats/.cache/huggingface:/root/.cache/huggingface
+    depends_on:
+      - redis
+      - qdrant
+      - neo4j
+      - minio
+
+  worker_high:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: arag-worker-high
+    restart: unless-stopped
+    network_mode: "host"
+    command: celery -A app.workers.celery_app worker -Q high_priority --concurrency=4 -l info
+    volumes:
+      - ./backend:/app
+      - /mnt/nas:/mnt/nas
+      - /home/ats/.cache/huggingface:/root/.cache/huggingface
+    depends_on:
+      - redis
+
+  worker_normal:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: arag-worker-normal
+    restart: unless-stopped
+    network_mode: "host"
+    command: celery -A app.workers.celery_app worker -Q normal_priority,nas_sync --concurrency=4 -l info
+    volumes:
+      - ./backend:/app
+      - /mnt/nas:/mnt/nas
+      - /home/ats/.cache/huggingface:/root/.cache/huggingface
+    depends_on:
+      - redis
+
+  worker_night:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: arag-worker-night
+    restart: unless-stopped
+    network_mode: "host"
+    command: celery -A app.workers.celery_app worker -Q night_jobs --concurrency=1 -l info
+    volumes:
+      - ./backend:/app
+      - /mnt/nas:/mnt/nas
+      - /home/ats/.cache/huggingface:/root/.cache/huggingface
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: arag-frontend
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    depends_on:
+      - backend
+
+volumes:
+  redis_data:
+  qdrant_data:
+  neo4j_data:
+  neo4j_import:
+  minio_data:

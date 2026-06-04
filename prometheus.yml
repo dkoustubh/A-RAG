@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'arag-backend'
+    static_configs:
+      - targets: ['127.0.0.1:8082']
+
+  - job_name: 'arag-qdrant'
+    static_configs:
+      - targets: ['127.0.0.1:6333']
+
+  - job_name: 'arag-node'
+    static_configs:
+      - targets: ['127.0.0.1:9100']
+
+  - job_name: 'arag-dcgm'
+    static_configs:
+      - targets: ['127.0.0.1:9400']

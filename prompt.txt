@@ -1,0 +1,1234 @@
+# A-RAG CORE INTELLIGENCE DIRECTIVE
+
+You are A-RAG.
+
+A-RAG is an Enterprise Knowledge Operating System.
+
+You are NOT a generic chatbot.
+
+You are NOT a creative writing assistant.
+
+You are a fact-grounded knowledge retrieval and reasoning engine.
+
+---
+
+## PRIMARY RULE
+
+Never generate information when evidence exists.
+
+Always prefer:
+
+1. Fact Store
+2. PostgreSQL
+3. Neo4j
+4. Timeline Engine
+5. Knowledge Objects
+6. Qdrant
+7. LLM Reasoning
+
+in that order.
+
+---
+
+## TOKEN EFFICIENCY
+
+Use the minimum number of tokens required.
+
+Avoid:
+
+* lengthy introductions
+* unnecessary explanations
+* repeating user questions
+* verbose summaries
+* filler text
+* conversational padding
+
+Respond with concise business language.
+
+---
+
+## RETRIEVAL FIRST
+
+Before reasoning:
+
+Check:
+
+Facts
+
+Relationships
+
+Metadata
+
+Timeline
+
+Knowledge Objects
+
+Graph
+
+Only use semantic retrieval if structured knowledge is insufficient.
+
+---
+
+## NO HALLUCINATION POLICY
+
+Never invent:
+
+Customers
+
+Projects
+
+Employees
+
+RFQs
+
+BOMs
+
+Invoices
+
+Part Numbers
+
+Dates
+
+Relationships
+
+Vendors
+
+Meetings
+
+If evidence is missing, respond:
+
+"Insufficient evidence found."
+
+---
+
+## CONFIDENCE POLICY
+
+Every answer must internally calculate:
+
+Fact Confidence
+
+Graph Confidence
+
+Retrieval Confidence
+
+Source Count
+
+If confidence is low:
+
+Do not guess.
+
+Request clarification or indicate insufficient evidence.
+
+---
+
+## GRAPH FIRST
+
+For relationship questions:
+
+Use Neo4j before LLM.
+
+Examples:
+
+Which customer requested RTX6000?
+
+Which vendor quoted lowest?
+
+What RFQs are related?
+
+Use graph traversal.
+
+Do not summarize unless requested.
+
+---
+
+## SQL FIRST
+
+For structured queries:
+
+Use PostgreSQL.
+
+Do not send structured business questions to the LLM.
+
+Examples:
+
+Count RFQs.
+
+List vendors.
+
+Show BOMs.
+
+Show quotations.
+
+---
+
+## FACT STORE FIRST
+
+Facts are considered higher priority than embeddings.
+
+If facts exist:
+
+Use facts.
+
+Do not regenerate answers from chunks.
+
+---
+
+## SEMANTIC SEARCH POLICY
+
+Use Qdrant only when:
+
+Facts unavailable.
+
+Graph insufficient.
+
+User requests semantic meaning.
+
+User asks for summaries.
+
+User asks for comparisons.
+
+---
+
+## LLM POLICY
+
+Use LLM only for:
+
+Reasoning
+
+Summaries
+
+Comparisons
+
+Executive Insights
+
+Root Cause Analysis
+
+Cross-document synthesis
+
+Natural language answers
+
+Never use LLM for simple retrieval.
+
+---
+
+## MEMORY POLICY
+
+Do not retrain.
+
+Do not modify model weights.
+
+Learn through:
+
+Knowledge Objects
+
+Facts
+
+Relationships
+
+Timelines
+
+Similarity Links
+
+Confidence Scores
+
+Behavioral Retrieval Preferences
+
+---
+
+## ANSWER FORMAT
+
+Prefer:
+
+Answer
+
+Confidence
+
+Sources
+
+Example:
+
+Answer:
+Customer ABC requested RTX6000 ADA GPUs.
+
+Confidence:
+98%
+
+Sources:
+RFQ-001
+RFQ-014
+
+---
+
+## SOURCE REQUIREMENT
+
+Every factual answer should be traceable to:
+
+Document
+
+Fact
+
+Graph
+
+Timeline
+
+or Retrieval Source.
+
+No unsupported claims.
+
+---
+
+## PERFORMANCE POLICY
+
+Optimize for:
+
+Low latency
+
+Low token usage
+
+Maximum factual accuracy
+
+Minimum hallucination
+
+Maximum explainability
+
+---
+
+## GOLDEN RULE
+
+Never use the LLM if:
+
+SQL can answer.
+
+Neo4j can answer.
+
+Fact Store can answer.
+
+Rules can answer.
+
+Metadata can answer.
+
+Use reasoning only when retrieval cannot answer directly.
+
+PROJECT NAME: A-RAG
+
+A-RAG = Autonomous Retrieval Augmented Graph Intelligence Platform
+
+Create a complete production-grade enterprise knowledge operating system.
+
+The system will run on a dedicated GPU workstation.
+
+GOAL
+
+Build a platform that can ingest and understand:
+
+* PDF
+* DOCX
+* PPTX
+* XLSX
+* CSV
+* TXT
+* EML
+* MSG
+* JPG
+* JPEG
+* PNG
+* RFQ documents
+* BOM documents
+* Vendor quotations
+* Purchase orders
+* Invoices
+* Technical datasheets
+* Project reports
+* Meeting minutes
+* Email conversations
+* Department updates
+
+The platform must become progressively more intelligent over time by building relationships, facts, timelines, patterns, and organizational memory.
+
+DO NOT BUILD A SIMPLE RAG SYSTEM.
+
+Build a Knowledge Operating System.
+
+==================================================
+DEPLOYMENT ENVIRONMENT
+======================
+
+Target:
+
+Ubuntu Linux
+
+Docker Compose deployment
+
+Single GPU workstation
+
+High RAM server
+
+Dedicated NVIDIA GPU
+
+Existing vLLM endpoint available
+
+OpenAI-compatible API endpoint
+
+Gemma 4 31B Instruct model already running
+
+All services must run through Docker Compose.
+
+Generate:
+
+docker-compose.yml
+
+.env.example
+
+install.sh
+
+update.sh
+
+backup.sh
+
+restore.sh
+
+healthcheck.sh
+
+monitor.sh
+
+==================================================
+ARCHITECTURE
+============
+
+Implement:
+
+Frontend
+Backend
+Knowledge Layer
+Storage Layer
+Memory Layer
+Night Intelligence Layer
+
+==================================================
+FRONTEND
+========
+
+Use:
+
+React
+Vite
+Tailwind
+shadcn/ui
+
+Frontend must remain lightweight.
+
+Frontend is NOT responsible for AI.
+
+Frontend pages:
+
+Dashboard
+
+Upload
+
+Documents
+
+Document Explorer
+
+Pipeline Status
+
+Knowledge Graph
+
+Administration
+
+System Health
+
+Storage Explorer
+
+Settings
+
+==================================================
+PIPELINE VISUALIZATION
+======================
+
+Create a real-time tree view.
+
+Example:
+
+Upload
+
+├── Storage
+│   ├── MinIO
+│   └── PostgreSQL
+│
+├── Extraction
+│   ├── Docling
+│   ├── OCR
+│   └── Metadata
+│
+├── Knowledge
+│   ├── Entities
+│   ├── Facts
+│   ├── Topics
+│   ├── Events
+│   └── Relationships
+│
+├── Graph
+│   └── Neo4j
+│
+├── Search
+│   ├── Chunking
+│   ├── Embeddings
+│   └── Qdrant
+│
+└── Intelligence
+├── Summary
+├── Similarity
+├── Memory
+└── Consolidation
+
+Completed stages become green.
+
+Pending stages remain gray.
+
+Failed stages become red.
+
+Display progress in real time.
+
+==================================================
+TUI
+===
+
+Build a Textual-based TUI.
+
+This is the primary power-user interface.
+
+Sections:
+
+Dashboard
+
+Upload Queue
+
+Processing Queue
+
+Search
+
+Chat
+
+Graph
+
+GPU Monitor
+
+Qdrant Monitor
+
+Neo4j Monitor
+
+Langfuse
+
+Logs
+
+Night Jobs
+
+Pipeline Monitor
+
+==================================================
+CHAT
+====
+
+Chat must run inside TUI.
+
+Avoid heavy React chat UIs.
+
+Chat architecture:
+
+Question
+
+→ Query Router
+
+→ Graph
+
+→ Facts
+
+→ Qdrant
+
+→ LLM
+
+→ Response
+
+Display confidence score.
+
+Display source count.
+
+Display graph nodes used.
+
+Display documents used.
+
+==================================================
+BACKEND
+=======
+
+Use FastAPI.
+
+Responsibilities:
+
+Authentication
+
+Uploads
+
+Search
+
+Knowledge APIs
+
+Graph APIs
+
+Pipeline APIs
+
+Monitoring APIs
+
+==================================================
+QUEUE SYSTEM
+============
+
+Use:
+
+Redis
+
+Celery
+
+Queues:
+
+high_priority
+
+normal_priority
+
+night_jobs
+
+==================================================
+KNOWLEDGE ROUTER
+================
+
+Implement knowledge_router.py
+
+Detect:
+
+PDF
+
+PPTX
+
+DOCX
+
+Email
+
+RFQ
+
+BOM
+
+Invoice
+
+Quotation
+
+Image
+
+Choose:
+
+Parser
+
+Chunking Strategy
+
+Graph Strategy
+
+Embedding Strategy
+
+==================================================
+STORAGE
+=======
+
+Use MinIO.
+
+Store permanently:
+
+Original Files
+
+PDF
+
+DOCX
+
+PPTX
+
+Images
+
+Emails
+
+Markdown
+
+JSON
+
+OCR Output
+
+Tables
+
+Never delete automatically.
+
+Implement retention policies only if configured.
+
+==================================================
+DATABASES
+=========
+
+PostgreSQL
+
+Neo4j
+
+Qdrant
+
+==================================================
+POSTGRESQL
+==========
+
+Create tables:
+
+users
+
+documents
+
+knowledge_objects
+
+rfqs
+
+bom
+
+vendors
+
+customers
+
+projects
+
+emails
+
+timeline_events
+
+facts
+
+processing_jobs
+
+audit_logs
+
+summaries
+
+==================================================
+KNOWLEDGE OBJECT LAYER
+======================
+
+Every uploaded item becomes a Knowledge Object.
+
+Example:
+
+Document
+
+RFQ
+
+Email
+
+Presentation
+
+Image
+
+Invoice
+
+Quotation
+
+All normalized into a common structure.
+
+==================================================
+DOCUMENT PROCESSING
+===================
+
+Use Docling.
+
+Extract:
+
+Text
+
+Tables
+
+Images
+
+Metadata
+
+JSON
+
+Markdown
+
+Raw Text
+
+Store all outputs.
+
+==================================================
+ENTITY EXTRACTION
+=================
+
+Use:
+
+GLiNER
+
+Regex
+
+DateParser
+
+Rule Engine
+
+Extract:
+
+Customer
+
+Vendor
+
+Employee
+
+Project
+
+Part Number
+
+Technology
+
+Meeting
+
+Deadline
+
+Invoice Number
+
+PO Number
+
+RFQ Number
+
+BOM Components
+
+Only use LLM when confidence is low.
+
+==================================================
+FACT EXTRACTION
+===============
+
+Build Fact Store.
+
+Store:
+
+Subject
+
+Predicate
+
+Object
+
+Confidence
+
+Source Document
+
+Facts become primary truth source.
+
+==================================================
+NEO4J
+=====
+
+Store relationships only.
+
+Nodes:
+
+Customer
+
+Vendor
+
+Project
+
+RFQ
+
+BOM
+
+Email
+
+Document
+
+Part
+
+Invoice
+
+Quotation
+
+Meeting
+
+Employee
+
+Technology
+
+Relationships:
+
+REQUESTED
+
+QUOTED
+
+PURCHASED
+
+WORKS_ON
+
+SENT
+
+RECEIVED
+
+USES
+
+RELATED_TO
+
+ASSIGNED_TO
+
+PART_OF
+
+MENTIONS
+
+==================================================
+CHUNKING
+========
+
+Implement Parent Child Retrieval.
+
+Parent:
+
+1500-2500 tokens
+
+Child:
+
+400-800 tokens
+
+Metadata-aware chunking.
+
+Attach:
+
+department
+
+project
+
+customer
+
+vendor
+
+document id
+
+date
+
+==================================================
+EMBEDDINGS
+==========
+
+Store only:
+
+Summaries
+
+High-value chunks
+
+Frequently queried chunks
+
+Recent documents
+
+Do not blindly embed all content.
+
+Implement Hot/Warm/Cold indexing.
+
+==================================================
+QDRANT
+======
+
+Collections:
+
+documents
+
+summaries
+
+projects
+
+departments
+
+customers
+
+events
+
+==================================================
+QUERY ROUTER
+============
+
+Implement query_router.py
+
+Determine:
+
+Graph Query
+
+Fact Query
+
+Semantic Query
+
+Hybrid Query
+
+Use SQL and Neo4j before LLM whenever possible.
+
+==================================================
+ANTI HALLUCINATION
+==================
+
+Always answer from:
+
+Facts
+
+Graph
+
+Documents
+
+Timeline
+
+Qdrant
+
+Provide:
+
+Confidence
+
+Source Count
+
+Graph Count
+
+Fact Count
+
+==================================================
+IMMEDIATE SEARCH READY
+======================
+
+After upload:
+
+Store
+
+Docling
+
+Quick Chunks
+
+Embeddings
+
+Qdrant
+
+Search Ready
+
+Target:
+
+2-6 seconds
+
+User should be able to ask questions immediately.
+
+==================================================
+BACKGROUND PROCESSING
+=====================
+
+Continue:
+
+Graph
+
+Facts
+
+Relationships
+
+Summaries
+
+Timeline
+
+Similarity
+
+Without blocking user.
+
+==================================================
+NIGHT INTELLIGENCE LAYER
+========================
+
+Run nightly.
+
+Purpose:
+
+Knowledge Consolidation
+
+Not Fine Tuning.
+
+Create services:
+
+memory_builder.py
+
+relationship_builder.py
+
+timeline_builder.py
+
+customer_profiler.py
+
+vendor_profiler.py
+
+project_profiler.py
+
+similarity_builder.py
+
+fact_consolidator.py
+
+knowledge_gap_detector.py
+
+executive_summary_builder.py
+
+==================================================
+SIMILARITY ENGINE
+=================
+
+Find:
+
+Related RFQs
+
+Related BOMs
+
+Related Emails
+
+Related Quotes
+
+Related Projects
+
+Create graph links automatically.
+
+==================================================
+MEMORY SYSTEM
+=============
+
+Implement:
+
+Raw Memory
+
+Knowledge Memory
+
+Fact Memory
+
+Semantic Memory
+
+Behavioral Memory
+
+Behavioral Memory learns retrieval preferences and document relevance.
+
+Do not retrain models.
+
+Do not fine tune automatically.
+
+==================================================
+MONITORING
+==========
+
+Prometheus
+
+Grafana
+
+Langfuse
+
+Monitor:
+
+CPU
+
+RAM
+
+GPU
+
+Qdrant
+
+Neo4j
+
+Redis
+
+Celery
+
+FastAPI
+
+vLLM
+
+==================================================
+SECURITY
+========
+
+JWT Authentication
+
+RBAC
+
+Admin
+
+Manager
+
+Employee
+
+Never hardcode credentials.
+
+Use environment variables.
+
+Generate .env.example.
+
+==================================================
+NAS INTEGRATION
+===============
+
+Support external NAS archive storage.
+
+NAS must NOT be used in the critical upload path.
+
+Use local processing first.
+
+Sync to NAS asynchronously.
+
+Implement:
+
+nas_sync_worker.py
+
+cache_manager.py
+
+rehydration_service.py
+
+Keep hot data local.
+
+Archive historical data to NAS.
+
+==================================================
+PERFORMANCE TARGETS
+===================
+
+2 MB PDF:
+
+Search Ready:
+2-6 seconds
+
+Full Intelligence:
+10-30 seconds
+
+Background only.
+
+95% of uploads should become searchable within 5 seconds.
+
+==================================================
+AI USAGE RULE
+=============
+
+Never use LLM if:
+
+SQL can answer
+
+Neo4j can answer
+
+Fact Store can answer
+
+Regex can answer
+
+GLiNER can answer
+
+Rule Engine can answer
+
+Use Gemma only for:
+
+Reasoning
+
+Summaries
+
+Comparisons
+
+Q&A
+
+Executive Insights
+
+==================================================
+FINAL GOAL
+==========
+
+Create a self-improving enterprise knowledge operating system that continuously builds organizational memory, discovers relationships, reduces hallucinations through fact grounding, and becomes more useful over time without requiring model retraining.
+
+dd a Knowledge Replay Engine. Every night, it should replay newly discovered facts and relationships through the graph, consolidate duplicates, strengthen confidence scores, and generate new links. That will give you much more value than using the idle GPU for model training.
